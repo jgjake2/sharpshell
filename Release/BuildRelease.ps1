@@ -1,7 +1,18 @@
-# IMPORTANT: Make sure that the path to msbuild is correct!  
-$msbuild = "C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe"
-if ((Test-Path $msbuild) -eq $false) {
-    Write-Host "Cannot find msbuild at '$msbuild'."
+# Locate MSBuild
+foreach ($dir in (${env:PROGRAMFILES(X86)}, ${env:PROGRAMFILES})) {
+    foreach ($ver in ("15.0", "14.0")) {
+       if ((Test-Path "$dir\Microsoft Visual Studio\2017\Professional\MSBuild\$ver\Bin\msbuild.exe") -eq $true) {
+            $msbuild = "$dir\Microsoft Visual Studio\2017\Professional\MSBuild\$ver\Bin\msbuild.exe"
+            Break
+        }
+       if ((Test-Path "$dir\MSBuild\$ver\bin\msbuild.exe") -eq $true) {
+            $msbuild = "$dir\MSBuild\$ver\bin\msbuild.exe"
+            Break
+        }
+    }
+}
+if (!$msbuild) {
+    Write-Host "Cannot find msbuild."
     Break
 }
 
@@ -15,10 +26,15 @@ $folderReleaseRoot = $scriptParentPath
 $folderSourceRoot = Split-Path -parent $folderReleaseRoot
 $folderSolutionsRoot = Join-Path $folderSourceRoot "SharpShell"
 $folderNuspecRoot = Join-Path $folderSourceRoot "release\nuspec"
+$nuget = Join-Path $scriptParentPath "Resources\nuget.exe"
 
 # Part 1 - Build the solution
 Write-Host "Preparing to build the SharpShell solution..."
 $solutionCoreLibraries = Join-Path $folderSolutionsRoot "SharpShell.sln"
+
+# Restore NuGet packages
+. $nuget restore $solutionCoreLibraries
+
 . $msbuild $solutionCoreLibraries /p:Configuration=Release /verbosity:minimal
 
 # Part 2 - Get the version number of the core library, use this to build the destination release folder.
@@ -36,7 +52,6 @@ Copy-Item "$folderBuild\Tools" "$folderRelease\Tools" -Force -Recurse
 Write-Host "Preparing to build the SharpShell Nuget Package..."
 $folderReleasePackage = Join-Path $folderRelease "Package"
 EnsureEmptyFolderExists $folderReleasePackage
-$nuget = Join-Path $scriptParentPath "Resources\nuget.exe"
 CopyItems (Join-Path "$folderRelease\Core" "*.*") (Join-Path $folderNuspecRoot "SharpShell\lib\net40")
 . $nuget pack (Join-Path $folderNuspecRoot "SharpShell\SharpShell.nuspec") -Version $releaseVersion -OutputDirectory $folderReleasePackage
 $packagePath = (Join-Path $folderReleasePackage "SharpShell.$releaseVersion.nupkg")

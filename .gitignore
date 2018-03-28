@@ -13,11 +13,14 @@ Thumbs.db
 *.cache
 *.ilk
 *.log
+*.tlog
 [Bb]in
 [Dd]ebug*/
 *.sbr
 obj/
 [Rr]elease*/
+!/Release/
+/Release/*.*.*/
 _ReSharper*/
 SharpShell/.nuget
 SharpShell/ipch/
@@ -28,3 +31,6 @@ Build/Tools/ServerManager.vshost.exe.manifest
 Release/2.*
 Release/nuspec/SharpShell/lib
 Release/nuspec/SharpShellTools/lib
+*.VC.db
+*.opendb
+.vs/
